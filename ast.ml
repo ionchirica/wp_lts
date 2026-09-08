@@ -1,53 +1,116 @@
-
-(** {2 Abstract Syntax of an Imp language} *)
+(** Abstract Syntax Tree for the Imp language *)
 
 type location = Lexing.position * Lexing.position
 
-type ident = { loc: location; id: string; }
+type identifier = {
+  location : location;
+  name : string;
+}
 
-(* unary operators for expressions *)
-type uope = Usucc 
+type unary_expr_op =
+  | Succ
 
-(* binary operators for expressions *)
-type bope = Badd | Bsub | Bmul | Bdiv | Bmod | Beq | Ble | Blt
+type binary_expr_op =
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | Mod
+  | Equal
+  | LessEqual
+  | LessThan
 
-(* constants *)
-type cst = Czero | Cone
+type constant =
+  | Zero
+  | One
 
-type expr =
-  | Ecst of cst
-  | Evar of ident
-  | Eunop of uope * expr
-  | Ebinop of bope * expr * expr
+type expression =
+  | Const of constant
+  | Variable of identifier
+  | Unary of unary_expr_op * expression
+  | Binary of binary_expr_op * expression * expression
 
-(* unary operators for props *)
-type uopp = Unot | Ux | Ug | Uf 
 
-(* binary operators for props *)
-type bopp = Bimp | Bu | Bw | Bxw | Br | Bxr 
+type unary_prop_op =
+  | Not
+  | Next        (* X *)
+  | Globally    (* G *)
+  | Eventually  (* F *)
 
-(* n-ary operators for props *)
-type nopp = Nand | Nor
+type binary_prop_op =
+  | Implies
+  | Until         (* U  *) 
+  | WeakUntil     (* W  *)
+  | NextWeakUntil (* XW *)
+  | Release       (* R  *)
+  | NextRelease   (* XR *)
 
-(* quantifiers for props *)
-type quant = Qall | Qex 
+type nary_prop_op =
+  | And
+  | Or
 
-type spec = Swf | Smu | Snu
+type quantifier =
+  | Forall
+  | Exists
 
-(* props *)
-type prop =
-  | Pfalse | Ptrue
-  | Punop of uopp * prop
-  | Pnop of uopp * prop list
-  | Pbop of bopp * prop * prop
+type proposition =
+  | False
+  | True
+  | Now of expression
+  | Omega of int * expression list
+  | UnaryOp of unary_prop_op * proposition
+  | NaryOp of nary_prop_op * proposition list
+  | BinaryOp of binary_prop_op * proposition * proposition
+  | Quantified of quantifier * identifier list * proposition
+  | Equality of expression * expression
 
-type stmt =
-  | Sskip
-  | Sassign of ident * expr
-  | Sassume of prop 
-  | Schoice of stmt list * stmt list 
-  | Siter of spec list * stmt list 
-  | Swhile of spec list * expr * stmt list
-  | Sif of expr * stmt list * stmt list
+type specification =
+  | WellFounded
+  | LeastFixedPoint
+  | GreatestFixedPoint
 
-type file = stmt
+type statement =
+  | Skip
+  | Assign of identifier * expression
+  | Assume of proposition
+  | Choice of statement list * statement list
+  | Iterate of specification list * statement list
+  | While of specification list * expression * statement list
+  | If of expression * statement list * statement list
+
+type program = statement list
+
+module VarMap = Map.Make(struct
+  type t = identifier
+
+  let compare x y =
+    String.compare x.name y.name
+end)
+
+type subst = expression VarMap.t
+type ren = identifier VarMap.t
+
+module Subst = struct
+
+  let empty : subst = VarMap.empty
+
+  let from xs es : subst =
+    if List.length xs <> List.length es then
+      invalid_arg "Subst.from: lists have different lengths";
+
+    List.fold_left2 (fun su x e -> VarMap.add x e su) VarMap.empty xs es
+
+  let update (su : subst) xs es : subst =
+    if List.length xs <> List.length es then
+      invalid_arg "Subst.update: lists have different lengths";
+
+    List.fold_left2 (fun su x e -> VarMap.add x e su) su xs es
+
+  let eqs (su : subst) : proposition list =
+    List.map (fun (x, e) -> Equality (Variable x, e)) (VarMap.bindings su)
+
+  let now (su : subst) : proposition list =
+    List.map (fun eq -> UnaryOp (Next, eq)) (eqs su)
+
+end
+

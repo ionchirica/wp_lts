@@ -1,4 +1,5 @@
 (executable
+ (name unfold)
  (public_name wp_lts)
  (promote (until-clean))
  (flags ()))
