@@ -16,6 +16,8 @@ let rec subst_prop su prop =
   match prop with
   | False -> False
   | True -> True
+  | Now e -> Now (subst_expr su e)
+  | Omega (index, ps) -> Omega (index, List.map (subst_expr su) ps)
   | Equality (e1, e2) ->
       Equality (subst_expr su e1, subst_expr su e2)
   | UnaryOp (op, p) ->

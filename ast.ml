@@ -30,7 +30,6 @@ type expression =
   | Unary of unary_expr_op * expression
   | Binary of binary_expr_op * expression * expression
 
-
 type unary_prop_op =
   | Not
   | Next        (* X *)
@@ -53,6 +52,7 @@ type quantifier =
   | Forall
   | Exists
 
+(* Missing Bind, for now *) 
 type proposition =
   | False
   | True
@@ -113,4 +113,3 @@ module Subst = struct
     List.map (fun eq -> UnaryOp (Next, eq)) (eqs su)
 
 end
-
