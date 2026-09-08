@@ -1,0 +1,4 @@
+(executable
+ (public_name wp_lts)
+ (promote (until-clean))
+ (flags ()))
