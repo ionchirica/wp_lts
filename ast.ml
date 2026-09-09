@@ -71,12 +71,13 @@ type specification =
 
 type statement =
   | Skip
-  | Assign of identifier * expression
+  | Assign of identifier list * expression list
   | Assume of proposition
   | Choice of statement list * statement list
   | Iterate of specification list * statement list
-  | While of specification list * expression * statement list
-  | If of expression * statement list * statement list
+                 
+  (* | While of specification list * expression * statement list *)
+  (* | If of expression * statement list * statement list *)
 
 type program = statement list
 
@@ -112,4 +113,15 @@ module Subst = struct
   let now (su : subst) : proposition list =
     List.map (fun eq -> UnaryOp (Next, eq)) (eqs su)
 
+end
+
+module Ren = struct
+
+  let empty : ren = VarMap.empty
+
+  let from xs ys : ren =
+    if List.length xs <> List.length ys then
+      invalid_arg "Ren.from: lists have different lengths";
+
+    List.fold_left2 (fun re x y -> VarMap.add x y re) VarMap.empty xs ys
 end
